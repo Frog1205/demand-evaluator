@@ -1,0 +1,13 @@
+node_modules
+.env
+.DS_Store
+data/evaluations.json
+.claude/
+*.docx
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp

@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>需求评估助手</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f8f6f1;
+  --bg-card: #ffffff;
+  --bg-input: #f5f3ed;
+  --border: rgba(0,0,0,0.07);
+  --border-hover: rgba(0,0,0,0.12);
+  --text: #2c2a28;
+  --text-secondary: #6b6862;
+  --text-tertiary: #a09d96;
+  --accent: #4f46bb;
+  --accent-light: #6c63d0;
+  --accent-soft: rgba(79,70,187,0.08);
+  --accent-glow: rgba(79,70,187,0.15);
+  --green: #1a8c6a;
+  --green-bg: #e8f5ef;
+  --green-text: #15734f;
+  --amber: #b07d18;
+  --amber-bg: #fdf3dc;
+  --amber-text: #8a6210;
+  --red: #c0452a;
+  --red-bg: #fce8e4;
+  --red-text: #9c3520;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.04);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font: 'DM Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+
+.header { margin-bottom: 2.5rem; text-align: center; }
+.header-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 6px 24px var(--accent-glow);
+}
+.header-icon svg { width: 28px; height: 28px; }
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.header p { font-size: 14px; color: var(--text-tertiary); font-weight: 400; }
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -1rem 0 1.5rem;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+.status-dot.ok { background: var(--green); }
+.status-dot.bad { background: var(--red); }
+.status-detail { font-family: var(--font-mono); }
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 2rem;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  transition: all 0.3s;
+}
+.step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  border: 2px solid var(--border);
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  transition: all 0.3s;
+}
+.step.active .step-num {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+.step.active { color: var(--text); }
+.step-line {
+  width: 48px;
+  height: 2px;
+  background: var(--border);
+  margin: 0 12px;
+  border-radius: 1px;
+  transition: background 0.3s;
+}
+.step-line.active { background: var(--accent); }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+.card:hover { box-shadow: var(--shadow-md); }
+.card-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+textarea {
+  width: 100%;
+  min-height: 140px;
+  font-size: 15px;
+  line-height: 1.7;
+  font-family: var(--font);
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: vertical;
+}
+textarea::placeholder { color: var(--text-tertiary); }
+
+.file-upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg-input);
+  margin-top: 12px;
+}
+.file-upload-zone:hover,
+.file-upload-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.file-upload-zone svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+.file-upload-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+.file-upload-hint strong { color: var(--accent); font-weight: 500; }
+.file-info {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(79,70,187,0.12);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.file-info.visible { display: flex; }
+.file-info-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.file-info-name { color: var(--text); font-weight: 500; word-break: break-all; }
+.file-info-size { color: var(--text-tertiary); font-size: 12px; }
+.file-info-remove {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 8px;
+  font-weight: 500;
+  box-shadow: none;
+}
+.file-info-remove:hover { opacity: 0.7; box-shadow: none; }
+.file-unsupported-note {
+  display: none;
+  font-size: 12px;
+  color: var(--amber-text);
+  background: var(--amber-bg);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-top: 8px;
+}
+.file-unsupported-note.visible { display: block; }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+button {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 10px 24px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+button:hover { border-color: var(--border-hover); color: var(--text); box-shadow: var(--shadow-md); }
+button:active { transform: scale(0.97); box-shadow: none; }
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+button.primary:hover { background: var(--accent-light); box-shadow: 0 6px 24px var(--accent-glow); transform: translateY(-1px); }
+button.primary:active { transform: scale(0.97) translateY(0); }
+button:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+.question-item { margin-bottom: 16px; }
+.question-item:last-child { margin-bottom: 0; }
+.question-text {
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+.question-meta {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 99px;
+  padding: 4px 10px;
+}
+.question-why {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+  margin: -2px 0 8px;
+}
+.answer-input {
+  width: 100%;
+  font-size: 14px;
+  padding: 10px 14px;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: all 0.2s;
+}
+.answer-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.answer-input::placeholder { color: var(--text-tertiary); }
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.metric-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+.metric-card.good { background: var(--green-bg); border-color: rgba(26,140,106,0.12); }
+.metric-card.good::after { background: var(--green); }
+.metric-card.warn { background: var(--amber-bg); border-color: rgba(176,125,24,0.12); }
+.metric-card.warn::after { background: var(--amber); }
+.metric-card.bad { background: var(--red-bg); border-color: rgba(192,69,42,0.12); }
+.metric-card.bad::after { background: var(--red); }
+.metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.metric-value { font-size: 28px; font-weight: 700; }
+.metric-value.good { color: var(--green-text); }
+.metric-value.warn { color: var(--amber-text); }
+.metric-value.bad { color: var(--red-text); }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 99px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+.tag.green { background: var(--green-bg); color: var(--green-text); }
+.tag.amber { background: var(--amber-bg); color: var(--amber-text); }
+.tag.red { background: var(--red-bg); color: var(--red-text); }
+
+.verdict-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 6px 18px;
+  border-radius: 99px;
+}
+.verdict-badge.green { background: var(--green-bg); color: var(--green-text); border: 1px solid rgba(26,140,106,0.15); }
+.verdict-badge.amber { background: var(--amber-bg); color: var(--amber-text); border: 1px solid rgba(176,125,24,0.15); }
+.verdict-badge.red { background: var(--red-bg); color: var(--red-text); border: 1px solid rgba(192,69,42,0.15); }
+
+.result-detail {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 3rem 0;
+}
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: bounce 1.4s infinite ease-in-out;
+}
+.loading-dot:nth-child(1) { animation-delay: -0.32s; }
+.loading-dot:nth-child(2) { animation-delay: -0.16s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.loading-text { font-size: 14px; color: var(--text-tertiary); margin-left: 8px; }
+
+.hidden { display: none; }
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1.5rem 0 1rem;
+}
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.section-divider span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+}
+
+.sub-item { margin-bottom: 12px; }
+.sub-item:last-child { margin-bottom: 0; }
+.sub-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+}
+.sub-value { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+.sub-highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.type-tag {
+  display: inline-flex;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid rgba(79,70,187,0.12);
+}
+.potential-badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.potential-badge.high { background: var(--green-bg); color: var(--green-text); }
+.potential-badge.mid { background: var(--amber-bg); color: var(--amber-text); }
+.potential-badge.low { background: var(--red-bg); color: var(--red-text); }
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 32px var(--accent-glow);
+  z-index: 999;
+  font-family: var(--font);
+  animation: toastIn 0.3s ease;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.fade-in { animation: fadeIn 0.35s ease; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 540px) {
+  .result-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .page { padding: 1.5rem 1rem; }
+  .header h1 { font-size: 22px; }
+  .step { font-size: 12px; gap: 6px; }
+  .step-line { width: 28px; margin: 0 8px; }
+  button { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+      </svg>
+    </div>
+    <h1>需求评估助手</h1>
+    <p>AI 驱动的业务需求分析 · 判断真伪 · 评估交付</p>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">后端检测中</span>
+    <span class="status-detail" id="status-detail"></span>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step active" id="step1-label"><span class="step-num">1</span><span>描述需求</span></div>
+    <div class="step-line" id="line1"></div>
+    <div class="step" id="step2-label"><span class="step-num">2</span><span>补充信息</span></div>
+    <div class="step-line" id="line2"></div>
+    <div class="step" id="step3-label"><span class="step-num">3</span><span>评估结果</span></div>
+  </div>
+
+  <div id="step1" class="fade-in">
+    <div class="card">
+      <textarea id="demand-input" placeholder="描述客户的需求，或直接粘贴客户原话&#10;&#10;例如：我们想做一个 AI 客服系统，能自动回复用户问题，接入我们的产品文档和历史工单数据，预算大概 3-5 万..."></textarea>
+      <div class="file-upload-zone" id="file-upload-zone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        <div class="file-upload-hint">拖拽附件到此处，或<strong>点击选择文件</strong></div>
+        <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">支持 txt, md, json, csv, pdf, docx, html, log 及常见代码文件</div>
+        <input type="file" id="file-input" hidden accept=".txt,.md,.markdown,.json,.csv,.yaml,.yml,.xml,.html,.htm,.log,.env,.cfg,.ini,.toml,.js,.ts,.jsx,.tsx,.py,.java,.go,.rs,.c,.cpp,.h,.css,.scss,.less,.sql,.sh,.bash,.ps1,.proto,.graphql,.pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls" />
+      </div>
+      <div class="file-info" id="file-info">
+        <div class="file-info-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        </div>
+        <div>
+          <div class="file-info-name" id="file-info-name"></div>
+          <div class="file-info-size" id="file-info-size"></div>
+        </div>
+        <button class="file-info-remove" id="file-info-remove">移除</button>
+      </div>
+      <div class="file-unsupported-note" id="file-unsupported-note">
+        此文件类型不支持自动文本提取，内容将不会被发送。建议将关键内容粘贴到需求描述中。
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="start-btn" onclick="startEval()">开始评估</button>
+      <button onclick="document.getElementById('demand-input').value=''">清空</button>
+    </div>
+  </div>
+
+  <div id="step2" class="hidden">
+    <div class="card" id="questions-container">
+      <div class="card-title">关键信息确认</div>
+      <div id="questions-list"></div>
+    </div>
+    <div class="btn-row">
+      <button class="primary" onclick="submitAnswers()">提交评估</button>
+      <button onclick="goBack()">返回修改</button>
+    </div>
+  </div>
+
+  <div id="step3" class="hidden">
+    <div id="loading" class="loading hidden">
+      <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
+      <span class="loading-text">正在深度评估需求...</span>
+    </div>
+    <div id="result-container"></div>
+  </div>
+
+  <div class="footer">需求评估助手 · 后端代理处理 · API Key 不进入浏览器</div>
+</div>
+
+<script>
+let currentDemand = '';
+let currentQuestions = [];
+let currentFile = null;
+
+const textExts = new Set([
+  '.txt', '.md', '.markdown', '.json', '.csv', '.yaml', '.yml', '.xml', '.html', '.htm', '.log',
+  '.env', '.cfg', '.ini', '.toml', '.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.go', '.rs',
+  '.c', '.cpp', '.h', '.css', '.scss', '.less', '.sql', '.sh', '.bash', '.ps1', '.proto', '.graphql',
+  '.docx', '.pdf'
+]);
+
+const imageExts = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp']);
+
+const $ = id => document.getElementById(id);
+
+function escapeHtml(str = '') {
+  return String(str).replace(/[&<>"]/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[s]));
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transition = 'opacity 0.3s';
+    setTimeout(() => t.remove(), 300);
+  }, 2000);
+}
+
+async function api(path, body) {
+  const isFormData = body instanceof FormData;
+  const options = { method: 'POST', body: isFormData ? body : JSON.stringify(body) };
+  if (!isFormData) options.headers = { 'Content-Type': 'application/json' };
+  const response = await fetch(path, options);
+  const data = await response.json().catch(() => ({ error: '接口返回异常' }));
+  if (!response.ok) throw new Error(data.error || '请求失败');
+  return data;
+}
+
+async function checkHealth() {
+  try {
+    const response = await fetch('/api/health');
+    const data = await response.json();
+    $('status-dot').className = `status-dot ${data.apiConfigured ? 'ok' : 'bad'}`;
+    $('status-text').textContent = data.apiConfigured ? '后端已连接' : '后端未配置 Key';
+    $('status-detail').textContent = data.provider && data.model ? `${data.provider}/${data.model}` : '';
+  } catch {
+    $('status-dot').className = 'status-dot bad';
+    $('status-text').textContent = '后端未启动';
+    $('status-detail').textContent = '';
+  }
+}
+
+async function startEval() {
+  const demand = $('demand-input').value.trim();
+  if (!demand && !currentFile) {
+    showToast('请先输入需求描述或上传附件');
+    return;
+  }
+  if (!currentFile && demand.length < 10) {
+    showToast('需求描述再补充一点会更准');
+    return;
+  }
+
+  currentDemand = demand;
+  showStep(2);
+  $('questions-list').innerHTML = '<div class=”loading”><div class=”loading-dot”></div><div class=”loading-dot”></div><div class=”loading-dot”></div><span class=”loading-text”>生成追问中...</span></div>';
+  $('start-btn').disabled = true;
+
+  try {
+    const fd = new FormData();
+    fd.set('demand', demand);
+    if (currentFile) fd.set('file', currentFile);
+    const data = await api('/api/questions', fd);
+    currentQuestions = data.questions || [];
+    renderQuestions();
+  } catch (error) {
+    $('questions-list').innerHTML = `<div class=”result-detail”>生成失败：${escapeHtml(error.message)}<br>可以直接点击”提交评估”跳过追问。</div>`;
+    currentQuestions = [];
+  } finally {
+    $('start-btn').disabled = false;
+  }
+}
+
+function renderQuestions() {
+  const list = $('questions-list');
+  if (!currentQuestions.length) {
+    list.innerHTML = '<div class="result-detail">没有生成追问，可以直接提交评估。</div>';
+    return;
+  }
+  list.innerHTML = '';
+  currentQuestions.forEach((q, index) => {
+    const id = q.id || `q${index + 1}`;
+    const item = document.createElement('div');
+    item.className = 'question-item';
+    item.innerHTML = `
+      ${q.category ? `<div class="question-meta">${escapeHtml(q.category)}</div>` : ''}
+      <div class="question-text">${escapeHtml(q.question || '')}</div>
+      ${q.why ? `<div class="question-why">为什么问：${escapeHtml(q.why)}</div>` : ''}
+      <input class="answer-input" id="ans-${escapeHtml(id)}" placeholder="${escapeHtml(q.placeholder || '选填')}" />
+    `;
+    list.appendChild(item);
+  });
+}
+
+async function submitAnswers() {
+  showStep(3);
+  $('loading').classList.remove('hidden');
+  $('result-container').innerHTML = '';
+
+  const answers = currentQuestions.map((q, index) => {
+    const id = q.id || `q${index + 1}`;
+    return {
+      question: q.question || `Q${index + 1}`,
+      answer: $(`ans-${id}`)?.value?.trim() || ''
+    };
+  });
+
+  try {
+    const fd = new FormData();
+    fd.set('demand', currentDemand);
+    fd.set('answers', JSON.stringify(answers));
+    if (currentFile) fd.set('file', currentFile);
+    const data = await api('/api/evaluate', fd);
+    renderResult(data.result || {}, data.meta || {});
+  } catch (error) {
+    $('result-container').innerHTML = `<div class="card"><div class="result-detail">评估失败：${escapeHtml(error.message)}</div></div>`;
+  } finally {
+    $('loading').classList.add('hidden');
+  }
+}
+
+function sc(n) {
+  const value = Number(n || 0);
+  return value >= 70 ? 'good' : value >= 40 ? 'warn' : 'bad';
+}
+
+function verdictClass(verdict) {
+  if (verdict === '接') return 'green';
+  if (verdict === '不接') return 'red';
+  return 'amber';
+}
+
+function riskClass(level) {
+  if (level === '高') return 'red';
+  if (level === '低') return 'green';
+  return 'amber';
+}
+
+function joinList(items) {
+  return (items || []).filter(Boolean).join('\n');
+}
+
+function renderResult(r, meta = {}) {
+  const scores = r.scores || {};
+  const realScore = scores.realNeed?.score ?? r.realScore ?? 0;
+  const deliverScore = scores.deliverability?.score ?? r.deliverScore ?? 0;
+  const moneyScore = scores.monetization?.score ?? 0;
+  const goalScore = scores.goalFit?.score ?? 0;
+  const verdict = r.decision || r.verdict || '待判断';
+  const vc = verdictClass(verdict);
+  const risks = (r.redFlags || []).map(x => `<span class="tag ${riskClass(x.level)}">${escapeHtml(x.title || x.detail || '')}</span>`).join('');
+  const riskDetails = (r.redFlags || []).map(x => `${x.level || '风险'}：${x.title || ''}\n${x.detail || ''}${x.mitigation ? `\n化解：${x.mitigation}` : ''}`).join('\n\n');
+  const missing = joinList(r.missingInfo);
+  const delivery = r.delivery || {};
+  const pricing = r.pricing || {};
+  const sales = r.salesAction || {};
+  const fit = r.businessGoalFit || {};
+  const moneyRating = moneyScore >= 75 ? '高' : moneyScore >= 50 ? '中' : '低';
+  const potential = fit.recommendedOffer ? '高' : moneyRating;
+  const potentialClass = potential === '高' ? 'high' : potential === '中' ? 'mid' : 'low';
+
+  $('result-container').innerHTML = `<div class="fade-in">
+    <div class="result-grid">
+      <div class="metric-card ${sc(realScore)}"><div class="metric-label">真实度</div><div class="metric-value ${sc(realScore)}">${realScore}</div></div>
+      <div class="metric-card ${sc(deliverScore)}"><div class="metric-label">可交付</div><div class="metric-value ${sc(deliverScore)}">${deliverScore}</div></div>
+      <div class="metric-card ${sc(moneyScore)}"><div class="metric-label">变现</div><div class="metric-value ${sc(moneyScore)}">${moneyRating}</div></div>
+      <div class="metric-card ${vc === 'green' ? 'good' : vc === 'red' ? 'bad' : 'warn'}"><div class="metric-label">建议</div><div style="margin-top:4px;"><span class="verdict-badge ${vc}">${escapeHtml(verdict)}</span></div></div>
+    </div>
+
+    <div class="card"><div class="card-title">综合判断</div><div class="result-detail">${escapeHtml(r.decisionReason || r.verdictReason || r.summary || '')}</div></div>
+
+    <div class="card"><div class="card-title">评分说明</div><div class="result-detail">${escapeHtml(`真实度：${scores.realNeed?.reason || r.realReason || ''}\n可交付：${scores.deliverability?.reason || r.deliverReason || ''}\n变现质量：${scores.monetization?.reason || ''}\n目标匹配：${scores.goalFit?.reason || ''}`.trim())}</div></div>
+
+    ${risks ? `<div class="card"><div class="card-title">风险预警</div><div style="padding-top:4px;">${risks}</div>${riskDetails ? `<div class="result-detail" style="margin-top:10px;">${escapeHtml(riskDetails)}</div>` : ''}</div>` : ''}
+    ${missing ? `<div class="card"><div class="card-title">仍缺信息</div><div class="result-detail">${escapeHtml(missing)}</div></div>` : ''}
+
+    <div class="section-divider"><span>交付预算评估</span></div>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="sub-item">
+          <div class="sub-label">预估周期</div>
+          <div class="sub-highlight">${escapeHtml(delivery.timeline || '待评估')}</div>
+        </div>
+        <div class="sub-item">
+          <div class="sub-label">预算区间</div>
+          <div class="sub-highlight">${escapeHtml(pricing.projectPrice || pricing.pocPrice || '待评估')}</div>
+        </div>
+      </div>
+      ${delivery.teamRoles?.length ? `<div class="sub-item" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);"><div class="sub-label">所需人才</div><div class="sub-value">${escapeHtml(delivery.teamRoles.join('、'))}</div></div>` : ''}
+      ${pricing.lowPriceWarning ? `<div class="sub-item" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);"><div class="sub-label">低价风险</div><div class="sub-value">${escapeHtml(pricing.lowPriceWarning)}</div></div>` : ''}
+    </div>
+
+    <div class="section-divider"><span>项目潜力评估</span></div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        ${delivery.techPath ? `<span class="type-tag">${escapeHtml(delivery.techPath.slice(0, 30))}</span>` : ''}
+        <span class="potential-badge ${potentialClass}">市场潜力：${escapeHtml(potential)}</span>
+      </div>
+      ${fit.recommendedOffer ? `<div class="sub-item"><div class="sub-label">产品化包装</div><div class="sub-value">${escapeHtml(fit.recommendedOffer)}</div></div>` : ''}
+      ${fit.scalingBottleneck ? `<div class="sub-item" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);"><div class="sub-label">放大瓶颈</div><div class="sub-value">${escapeHtml(fit.scalingBottleneck)}</div></div>` : ''}
+      ${fit.repeatableAssets?.length ? `<div class="sub-item" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);"><div class="sub-label">可沉淀资产</div><div class="sub-value">${escapeHtml(fit.repeatableAssets.join('\n'))}</div></div>` : ''}
+    </div>
+
+    <div class="section-divider"><span>行动建议</span></div>
+
+    <div class="card"><div class="card-title">交付方案</div><div class="result-detail">${escapeHtml([delivery.recommendedScope, ...(delivery.mvpPlan || []), delivery.acceptanceCriteria?.length ? `验收标准：${delivery.acceptanceCriteria.join('；')}` : '', delivery.afterSalesBoundary ? `售后边界：${delivery.afterSalesBoundary}` : ''].filter(Boolean).join('\n\n'))}</div></div>
+    <div class="card"><div class="card-title">报价策略</div><div class="result-detail">${escapeHtml([`诊断费：${pricing.diagnosisFee || '待定'}`, `PoC：${pricing.pocPrice || '待定'}`, `完整项目：${pricing.projectPrice || '待定'}`, `付款节点：${pricing.paymentPlan || '待定'}`].join('\n'))}</div></div>
+    <div class="card"><div class="card-title">下一步行动</div><div class="result-detail">${escapeHtml([sales.nextMove, sales.customerMessage, sales.meetingAgenda?.length ? `会议议程：${sales.meetingAgenda.join('；')}` : '', sales.documentsToAsk?.length ? `需客户提供：${sales.documentsToAsk.join('；')}` : ''].filter(Boolean).join('\n\n'))}</div></div>
+
+    <div class="btn-row" style="margin-top:1.25rem;"><button class="primary" onclick="resetAll()">评估新需求</button><button onclick="window.print()">打印/另存 PDF</button></div>
+    ${meta.model ? `<div class="footer" style="margin-top:1.5rem;">${escapeHtml(meta.provider || '')} / ${escapeHtml(meta.model || '')} · ${Number(meta.latencyMs || 0)}ms</div>` : ''}
+  </div>`;
+}
+
+function showStep(n) {
+  ['step1', 'step2', 'step3'].forEach(id => {
+    const el = $(id);
+    el.classList.add('hidden');
+    el.classList.remove('fade-in');
+  });
+  const target = $('step' + n);
+  target.classList.remove('hidden');
+  target.classList.add('fade-in');
+  for (let i = 1; i <= 3; i++) {
+    const label = $('step' + i + '-label');
+    label.classList.toggle('active', i <= n);
+  }
+  $('line1').classList.toggle('active', n >= 2);
+  $('line2').classList.toggle('active', n >= 3);
+}
+
+function goBack() {
+  showStep(1);
+}
+
+function resetAll() {
+  currentDemand = '';
+  currentQuestions = [];
+  currentFile = null;
+  $('demand-input').value = '';
+  $('questions-list').innerHTML = '';
+  $('result-container').innerHTML = '';
+  clearFileUI();
+  showStep(1);
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function getFileExt(filename) {
+  const i = filename.lastIndexOf('.');
+  return i >= 0 ? filename.slice(i).toLowerCase() : '';
+}
+
+function handleFileSelect(file) {
+  if (!file) return;
+  currentFile = file;
+  $('file-info-name').textContent = file.name;
+  $('file-info-size').textContent = formatSize(file.size);
+  $('file-info').classList.add('visible');
+  $('file-upload-zone').style.display = 'none';
+
+  const ext = getFileExt(file.name);
+  const unsupported = ext && !textExts.has(ext);
+  $('file-unsupported-note').classList.toggle('visible', unsupported);
+}
+
+function clearFileUI() {
+  currentFile = null;
+  $('file-input').value = '';
+  $('file-info').classList.remove('visible');
+  $('file-info-name').textContent = '';
+  $('file-info-size').textContent = '';
+  $('file-upload-zone').style.display = '';
+  $('file-unsupported-note').classList.remove('visible');
+}
+
+$('file-upload-zone').addEventListener('click', () => $('file-input').click());
+$('file-input').addEventListener('change', () => {
+  const file = $('file-input').files[0];
+  if (file) handleFileSelect(file);
+});
+$('file-upload-zone').addEventListener('dragover', e => {
+  e.preventDefault();
+  $('file-upload-zone').classList.add('drag-over');
+});
+$('file-upload-zone').addEventListener('dragleave', () => {
+  $('file-upload-zone').classList.remove('drag-over');
+});
+$('file-upload-zone').addEventListener('drop', e => {
+  e.preventDefault();
+  $('file-upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFileSelect(file);
+});
+$('file-info-remove').addEventListener('click', e => {
+  e.stopPropagation();
+  clearFileUI();
+});
+
+checkHealth();
+</script>
+</body>
+</html>
