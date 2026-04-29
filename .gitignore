@@ -11,3 +11,4 @@ data/evaluations.json
 *.gif
 *.webp
 *.bmp
+railway.toml
