@@ -177,7 +177,7 @@ function extractDocxText(buffer) {
         }
 
         let text = xml
-          .replace(/<w:p[ >]/g, '\n')
+          .replace(/<\/w:p>/g, '\n')
           .replace(/<[^>]+>/g, '')
           .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
           .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
